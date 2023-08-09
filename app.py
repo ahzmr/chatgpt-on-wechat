@@ -8,6 +8,7 @@ from channel import channel_factory
 from common.log import logger
 from config import conf, load_config
 from plugins import *
+from szy.main import SzyServices
 
 
 def sigterm_handler_wrap(_signo):
@@ -45,6 +46,10 @@ def run():
         channel = channel_factory.create_channel(channel_name)
         if channel_name in ["wx", "wxy", "terminal", "wechatmp", "wechatmp_service", "wechatcom_app"]:
             PluginManager().load_plugins()
+
+        # szy init
+        szy_services = SzyServices()
+        szy_services.startup()
 
         # startup channel
         channel.startup()
