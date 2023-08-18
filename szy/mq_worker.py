@@ -9,6 +9,7 @@ import json
 from rocketmq.client import PushConsumer, ConsumeStatus
 
 from common.log import logger
+from config import conf
 
 
 # 监听rocket mq消息, 并将消息转发到微信
@@ -16,12 +17,12 @@ from common.log import logger
 class MqWorker:
 
     def __init__(self, wechatNotice=None):
-        self.groupName = 'ticket-group'
-        self.nameserver = '192.168.60.27:9876'
-        self.accessKey = ''
-        self.secretKey = ''
-        self.topicName = 'wechat_notify'
-        self.TAGS = '*'
+        self.groupName = conf().get("szy_mq_group_name", "ticket-group")
+        self.nameserver = conf().get("szy_mq_nameserver", '192.168.60.27:9876')
+        self.accessKey = conf().get("szy_mq_access_key", '')
+        self.secretKey = conf().get("szy_mq_secret_key", '')
+        self.topicName = conf().get("szy_mq_topic_name", 'wechat_notify')
+        self.TAGS = conf().get("szy_mq_tags", '*')
         self.startTime = datetime.datetime.now()
         self.wechatNotice = wechatNotice
         self.consumer = None
@@ -61,7 +62,8 @@ class MqWorker:
 
         # 订阅topic
         self.consumer.subscribe(self.topicName, self.callback, self.TAGS)
-        logger.info(' [Szy][Consumer] Waiting for messages.')
+        logger.info(' [Szy][Consumer] Waiting for messages from {} -- {} -- {}.'
+                    .format(self.nameserver, self.groupName, self.topicName))
         self.startTime = datetime.datetime.now()
         # 启动消费者
         self.consumer.start()

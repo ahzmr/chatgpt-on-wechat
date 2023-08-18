@@ -117,6 +117,8 @@ available_setting = {
     "linkai_app_code": ""
 }
 
+# 配置参数前缀白名单
+setting_prefix_white_list = ['szy_']
 
 class Config(dict):
     def __init__(self, d=None):
@@ -129,12 +131,16 @@ class Config(dict):
         self.user_datas = {}
 
     def __getitem__(self, key):
-        if key not in available_setting:
+        if any([key.startswith(prefix) for prefix in setting_prefix_white_list]):
+            pass
+        elif key not in available_setting:
             raise Exception("key {} not in available_setting".format(key))
         return super().__getitem__(key)
 
     def __setitem__(self, key, value):
-        if key not in available_setting:
+        if any([key.startswith(prefix) for prefix in setting_prefix_white_list]):
+            pass
+        elif key not in available_setting:
             raise Exception("key {} not in available_setting".format(key))
         return super().__setitem__(key, value)
 
