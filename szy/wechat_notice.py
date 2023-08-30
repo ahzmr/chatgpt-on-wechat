@@ -4,7 +4,6 @@
 微信通知工具类
 __author__ = 'wenin819'
 """
-import asyncio
 import time
 from datetime import datetime
 
@@ -88,15 +87,14 @@ class WechatNotice:
             logger.warn('[Szy] get_user: name[{}] is not in white list.'.format(name))
             return None
 
-        loop = asyncio.get_event_loop()
         user = None
         for update in [False, True]:
-            user = asyncio.run_coroutine_threadsafe(self.get_user(name, target.get('type'), update), loop).result()
+            user = self.get_user(name, target.get('type'), update)
             if user:
                 break
 
         if user:
             logger.debug('[Szy]send message to {}: {}'.format(target, msg))
-            asyncio.run_coroutine_threadsafe(user.send_msg(msg), loop).result()
+            user.send_msg(msg)
         else:
             logger.warn('[Szy]send message failed. user not found. {}: {}'.format(target, msg))
