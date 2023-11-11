@@ -142,6 +142,9 @@ class WechatChannel(ChatChannel):
     @time_checker
     @_check
     def handle_single(self, cmsg: ChatMessage):
+        # filter system message
+        if cmsg.other_user_id in ["weixin"]:
+            return
         if cmsg.ctype == ContextType.VOICE:
             if conf().get('speech_recognition') != True and\
                     cmsg.from_user_nickname not in conf().get('speech_recognition_name_white_list', []):
