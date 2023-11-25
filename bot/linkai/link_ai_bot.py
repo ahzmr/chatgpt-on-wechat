@@ -7,13 +7,12 @@ import requests
 
 from bot.bot import Bot
 from bot.chatgpt.chat_gpt_session import ChatGPTSession
-from bot.openai.open_ai_image import OpenAIImage
 from bot.session_manager import SessionManager
 from bridge.context import Context, ContextType
 from bridge.reply import Reply, ReplyType
 from common.log import logger
 from config import conf, pconf
-
+import threading
 
 class LinkAIBot(Bot):
     # authentication failed
@@ -47,10 +46,10 @@ class LinkAIBot(Bot):
         :param retry_count: 当前递归重试次数
         :return: 回复
         """
-        if retry_count >= 2:
+        if retry_count > 2:
             # exit from retry 2 times
             logger.warn("[LINKAI] failed after maximum number of retry times")
-            return Reply(ReplyType.ERROR, "请再问我一次吧")
+            return Reply(ReplyType.TEXT, "请再问我一次吧")
 
         try:
             # load config
@@ -64,7 +63,7 @@ class LinkAIBot(Bot):
             session_id = context["session_id"]
 
             session = self.sessions.session_query(query, session_id)
-            model = conf().get("model") or "gpt-3.5-turbo"
+            model = conf().get("model")
             # remove system message
             if session.messages[0].get("role") == "system":
                 if app_code or model == "wenxin":
@@ -104,6 +103,10 @@ class LinkAIBot(Bot):
                     knowledge_suffix = self._fetch_knowledge_search_suffix(response)
                     if knowledge_suffix:
                         reply_content += knowledge_suffix
+                # image process
+                if response["choices"][0].get("img_urls"):
+                    thread = threading.Thread(target=self._send_image, args=(context.get("channel"), context, response["choices"][0].get("img_urls")))
+                    thread.start()
                 return Reply(ReplyType.TEXT, reply_content)
 
             else:
@@ -118,7 +121,7 @@ class LinkAIBot(Bot):
                     logger.warn(f"[LINKAI] do retry, times={retry_count}")
                     return self._chat(query, context, retry_count + 1)
 
-                return Reply(ReplyType.ERROR, "提问太快啦，请休息一下再问我吧")
+                return Reply(ReplyType.TEXT, "提问太快啦，请休息一下再问我吧")
 
         except Exception as e:
             logger.exception(e)
@@ -262,3 +265,14 @@ class LinkAIBot(Bot):
                 return suffix
         except Exception as e:
             logger.exception(e)
+
+
+    def _send_image(self, channel, context, image_urls):
+        if not image_urls:
+            return
+        try:
+            for url in image_urls:
+                reply = Reply(ReplyType.IMAGE_URL, url)
+                channel.send(reply, context)
+        except Exception as e:
+            logger.error(e)
