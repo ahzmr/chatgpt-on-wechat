@@ -5,9 +5,10 @@ import signal
 import sys
 
 from channel import channel_factory
-from common.log import logger
-from config import conf, load_config
+from common import const
+from config import load_config
 from plugins import *
+import threading
 from szy.main import SzyServices
 
 
@@ -44,8 +45,15 @@ def run():
             # os.environ['WECHATY_PUPPET_SERVICE_ENDPOINT'] = '127.0.0.1:9001'
 
         channel = channel_factory.create_channel(channel_name)
-        if channel_name in ["wx", "wxy", "terminal", "wechatmp", "wechatmp_service", "wechatcom_app", "wework"]:
+        if channel_name in ["wx", "wxy", "terminal", "wechatmp", "wechatmp_service", "wechatcom_app", "wework", const.FEISHU,const.DINGTALK]:
             PluginManager().load_plugins()
+
+        if conf().get("use_linkai"):
+            try:
+                from common import linkai_client
+                threading.Thread(target=linkai_client.start, args=(channel, )).start()
+            except Exception as e:
+                pass
 
         # szy init
         szy_services = SzyServices()
@@ -53,6 +61,7 @@ def run():
 
         # startup channel
         channel.startup()
+
     except Exception as e:
         logger.error("App startup failed!")
         logger.exception(e)

@@ -9,8 +9,7 @@ from bridge.context import *
 from bridge.reply import *
 from channel.channel import Channel
 from common.dequeue import Dequeue
-from common.log import logger
-from config import conf
+from common import memory
 from plugins import *
 
 import pypinyin
@@ -103,6 +102,7 @@ class ChatChannel(Channel):
                 logger.debug("[WX]reference query skipped")
                 return None
 
+            nick_name_black_list = conf().get("nick_name_black_list", [])
             if context.get("isgroup", False):  # 群聊
                 # 校验关键字
                 match_prefix = check_prefix(content, conf().get("group_chat_prefix"), context)
@@ -114,6 +114,12 @@ class ChatChannel(Channel):
                         if match_prefix:
                             content = content.replace(match_prefix, "", 1).strip()
                     if context["msg"].is_at:
+                        nick_name = context["msg"].actual_user_nickname
+                        if nick_name and nick_name in nick_name_black_list:
+                            # 黑名单过滤
+                            logger.warning(f"[WX] Nickname {nick_name} in In BlackList, ignore")
+                            return None
+
                         logger.info("[WX]receive group at")
                         if not conf().get("group_at_off", False):
                             flag = True
@@ -133,6 +139,12 @@ class ChatChannel(Channel):
                         logger.info("[WX]receive group voice, but checkprefix didn't match")
                     return None
             else:  # 单聊
+                nick_name = context["msg"].from_user_nickname
+                if nick_name and nick_name in nick_name_black_list:
+                    # 黑名单过滤
+                    logger.warning(f"[WX] Nickname '{nick_name}' in In BlackList, ignore")
+                    return None
+
                 match_prefix = check_prefix(
                     content, conf().get("single_chat_prefix", [""]), context
                 )
@@ -183,8 +195,6 @@ class ChatChannel(Channel):
         reply = e_context["reply"]
         if not e_context.is_pass():
             logger.debug("[WX] ready to handle context: type={}, content={}".format(context.type, context.content))
-            if e_context.is_break():
-                context["generate_breaked_by"] = e_context["breaked_by"]
             if context.type == ContextType.TEXT or context.type == ContextType.IMAGE_CREATE:  # 文字和图片消息
                 context["channel"] = e_context["channel"]
                 reply = super().build_reply_content(context.content, context)
@@ -216,14 +226,16 @@ class ChatChannel(Channel):
                     else:
                         return
             elif context.type == ContextType.IMAGE:  # 图片消息，当前仅做下载保存到本地的逻辑
-                cmsg = context["msg"]
-                cmsg.prepare()
+                memory.USER_IMAGE_CACHE[context["session_id"]] = {
+                    "path": context.content,
+                    "msg": context.get("msg")
+                }
             elif context.type == ContextType.SHARING:  # 分享信息，当前无默认逻辑
                 pass
             elif context.type == ContextType.FUNCTION or context.type == ContextType.FILE:  # 文件消息及函数调用等，当前无默认逻辑
                 pass
             else:
-                logger.error("[WX] unknown context type: {}".format(context.type))
+                logger.warning("[WX] unknown context type: {}".format(context.type))
                 return
         return reply
 
@@ -249,7 +261,8 @@ class ChatChannel(Channel):
                         reply = super().build_text_to_voice(reply.content)
                         return self._decorate_reply(context, reply)
                     if context.get("isgroup", False):
-                        reply_text = "@" + context["msg"].actual_user_nickname + "\n" + reply_text.strip()
+                        if not context.get("no_need_at", False):
+                            reply_text = "@" + context["msg"].actual_user_nickname + "\n" + reply_text.strip()
                         reply_text = conf().get("group_chat_reply_prefix", "") + reply_text + conf().get("group_chat_reply_suffix", "")
                     else:
                         reply_text = conf().get("single_chat_reply_prefix", "") + reply_text + conf().get("single_chat_reply_suffix", "")
