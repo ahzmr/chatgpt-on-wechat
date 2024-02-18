@@ -1,0 +1,3 @@
+
+# rocketmq
+rocketmq-client-python>=2.0.0

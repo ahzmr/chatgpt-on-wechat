@@ -8,6 +8,7 @@ import json
 
 from rocketmq.client import PushConsumer, ConsumeStatus
 
+from clients.mq_sender.rpc_call import RpcCall
 from common.log import logger
 from config import conf
 
@@ -16,7 +17,7 @@ from config import conf
 # Path: mq/mq_worker.py
 class MqWorker:
 
-    def __init__(self, wechatNotice=None):
+    def __init__(self):
         self.groupName = conf().get("szy_mq_group_name", "ticket-group")
         self.nameserver = conf().get("szy_mq_nameserver", '192.168.60.27:9876')
         self.accessKey = conf().get("szy_mq_access_key", '')
@@ -24,7 +25,7 @@ class MqWorker:
         self.topicName = conf().get("szy_mq_topic_name", 'wechat_notify')
         self.TAGS = conf().get("szy_mq_tags", '*')
         self.startTime = datetime.datetime.now()
-        self.wechatNotice = wechatNotice
+        self.wechatNotice = RpcCall()
         self.consumer = None
         pass
 

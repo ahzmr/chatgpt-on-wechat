@@ -59,11 +59,11 @@ def run():
         if channel_name == "wxy":
             os.environ["WECHATY_LOG"] = "warn"
 
-        start_channel(channel_name)
-
         # szy init
         szy_services = SzyServices()
         szy_services.startup()
+
+        start_channel(channel_name)
 
         while True:
             time.sleep(1)

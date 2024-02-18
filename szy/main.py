@@ -6,7 +6,7 @@ __author__ = 'wenin819'
 import time
 
 from config import conf
-from szy.mq_worker import MqWorker
+from szy.rpc_worker import RpcWorker
 from szy.wechat_notice import WechatNotice
 
 
@@ -16,15 +16,15 @@ class SzyServices:
         nameWhiteList = conf().get("szy_msg_name_white_list", [])
 
         self.notice = WechatNotice(msgKeywordWhiteList, nameWhiteList)
-        self.mq_worker = MqWorker(wechatNotice=self.notice)
+        self.worker = RpcWorker(wechatNotice=self.notice)
 
     def startup(self):
-        self.mq_worker.startup()
+        self.worker.startup()
 
 
 if __name__ == '__main__':
-    mq_worker = MqWorker(wechatNotice=None)
-    mq_worker.startup()
+    rpc_worker = RpcWorker(wechatNotice=None)
+    rpc_worker.startup()
 
     while True:
         time.sleep(3600)
