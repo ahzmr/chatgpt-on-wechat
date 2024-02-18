@@ -38,5 +38,8 @@ linkai
 # dingtalk
 dingtalk_stream
 
+# zhipuai
+zhipuai>=2.0.1
+
 # rocketmq
 rocketmq-client-python>=2.0.0
