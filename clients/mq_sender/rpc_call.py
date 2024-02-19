@@ -26,6 +26,8 @@ class RpcCall:
     def startup(self):
         if self.client is None:
             self.client = xmlrpc.client.ServerProxy(self.serverUrl, allow_none=True)
+            logger.info('[Szy]RPC client is inited: {}.'.format(self.serverUrl))
+
 
 if __name__ == '__main__':
     call = RpcCall()

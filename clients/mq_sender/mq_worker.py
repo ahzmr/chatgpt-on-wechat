@@ -25,7 +25,7 @@ class MqWorker:
         self.topicName = conf().get("szy_mq_topic_name", 'wechat_notify')
         self.TAGS = conf().get("szy_mq_tags", '*')
         self.startTime = datetime.datetime.now()
-        self.wechatNotice = RpcCall()
+        self.client = RpcCall()
         self.consumer = None
         pass
 
@@ -33,15 +33,21 @@ class MqWorker:
     def callback(self, msg, *args, **kwargs):
         print('Received message. messageId: ', msg.id, ' body: ', msg.body)
 
-        if msg.body is not None and self.wechatNotice is not None:
+        if msg.body is not None and self.client is not None:
+            msgObj = None
 
             try:
                 msgObj = json.loads(msg.body)
-
-                if msgObj:
-                    self.wechatNotice.send_msg(msgObj['msg'], msgObj)
             except:
                 logger.error('[Szy]json.loads error. body: {}'.format(msg.body))
+                return ConsumeStatus.CONSUME_SUCCESS
+
+            try:
+                self.client.call(msgObj)
+            except Exception as e:
+                logger.error('[Szy]msg send error. body: {}'.format(msgObj))
+                logger.exception(e)
+
 
         # 消费成功回复CONSUME_SUCCESS
         return ConsumeStatus.CONSUME_SUCCESS
