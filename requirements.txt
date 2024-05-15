@@ -8,3 +8,4 @@ pypinyin>=0.48.0
 Pillow
 pre-commit
 web.py
+linkai>=0.0.6.0
